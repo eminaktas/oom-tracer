@@ -1,0 +1,8 @@
+CompileFlags:
+  Add:
+    # - -target
+    # - bpf
+    # pick ONE arch to keep in-editor parsing stable
+    - -D__TARGET_ARCH_arm64
+    # or: -D__TARGET_ARCH_x86
+    - -I./pgk/ebpf/bpf/headers

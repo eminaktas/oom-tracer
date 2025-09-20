@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unlimited-static-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unlimited-static-pod
+  template:
+    metadata:
+      labels:
+        app: unlimited-static-pod
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: unlimited-static-pod
+        image: python:3.11-slim
+        command: ["python", "-u", "-c"]
+        args:
+          - |
+            import os, time, sys, math
+            def getenv_int(name, default):
+                try: return int(os.getenv(name, str(default)))
+                except: return default
+
+            alloc_size_mb = getenv_int("ALLOC_SIZE_MB", 50)           # MB per epoch
+            interval_s    = getenv_int("EPOCH_INTERVAL_SEC", 1)       # seconds
+            keep          = os.getenv("KEEP_ALLOCATED", "true").lower() in ("1","true","yes","y")
+            page_size     = getenv_int("PAGE_SIZE", 4096)             # bytes
+            write_n       = getenv_int("WRITE_BYTES_PER_PAGE", 16)    # bytes written per page
+
+            if alloc_size_mb <= 0 or interval_s <= 0 or page_size <= 0 or write_n <= 0:
+                print("ALLOC_SIZE_MB, EPOCH_INTERVAL_SEC, PAGE_SIZE, WRITE_BYTES_PER_PAGE must be positive integers", file=sys.stderr); sys.exit(1)
+
+            allocations = []
+            total_mb = 0
+            print(f"Starting: {alloc_size_mb} MB/epoch, interval={interval_s}s, keep_allocated={keep}, page_size={page_size}, write_per_page={write_n}", flush=True)
+            epoch = 0
+
+            while True:
+                epoch += 1
+                size_bytes = alloc_size_mb * 1024 * 1024
+                block = bytearray(size_bytes)
+
+                # Touch pages: write 'write_n' bytes per page with a varying pattern
+                # This defeats KSM/dedup and forces real backing pages.
+                pages = math.ceil(size_bytes / page_size)
+                for p in range(pages):
+                    base = p * page_size
+                    v = (epoch + p) & 0xFF
+                    end = min(base + write_n, size_bytes)
+                    # write a small varying sequence per page
+                    for off in range(base, end):
+                        block[off] = (v + (off - base)) & 0xFF
+
+                if keep:
+                    allocations.append(block)  # keep reference so GC can't reclaim
+                    total_mb += alloc_size_mb
+                else:
+                    # explicitly drop the reference
+                    del block
+                    total_mb = 0
+
+                print(f"Epoch {epoch}: allocated {alloc_size_mb} MB, total_kept≈{total_mb} MB", flush=True)
+                time.sleep(interval_s)
+        env:
+          - name: ALLOC_SIZE_MB
+            value: "1500"
+          - name: EPOCH_INTERVAL_SEC
+            value: "5"
+          - name: KEEP_ALLOCATED
+            value: "false"
+          - name: PAGE_SIZE
+            value: "4096"
+          - name: WRITE_BYTES_PER_PAGE
+            value: "16"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "100m"

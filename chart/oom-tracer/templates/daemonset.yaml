@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: service
+    app.kubernetes.io/part-of: oom-tracer
+    service: oom-tracer
+  {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+  {{- include "chart.annotations" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+      service: oom-tracer
+    {{- include "chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        service: oom-tracer
+      {{- include "chart.selectorLabels" . | nindent 8 }}
+      annotations:
+        kubectl.kubernetes.io/default-container: oom-tracer
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      {{- with .Values.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "chart.fullname" . }}
+      terminationGracePeriodSeconds: 10
+      hostPID: true
+      containers:
+      - args:
+        - --v={{ .Values.logLevel }}
+        {{- if .Values.dryRun }}
+        - --victim_annotation=""
+        {{- else }}
+        - --victim_annotation={{ default "oom-tracer.alpha.kubernetes.io/evict-me='yes'" .Values.victimAnnotation }}
+        {{- end }}
+        {{- if not .Values.metric.disabled }}
+        - --metrics_bind_address={{ .Values.metric.host }}:{{ .Values.metric.port }}
+        {{- end }}
+        {{- with .Values.extraArgs }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        name: oom-tracer
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.pullPolicy }}
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        port:
+        - containerPort: {{ .Values.metric.port }}
+          protocol: TCP
+        env:
+        - name: GOMEMLIMIT
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.memory
+        - name: GOMAXPROCS
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: K8S_NODENAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName

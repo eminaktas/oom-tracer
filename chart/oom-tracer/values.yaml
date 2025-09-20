@@ -1,0 +1,64 @@
+logLevel: 0
+
+# OOM Tracer will evict oom killed pods with eviction
+# if pod is being killed if host is limited by memory.
+victimAnnotation: oom-tracer.alpha.kubernetes.io/evict-me=yes
+
+# Only report OOM kills
+dryRun: false
+
+metric:
+  disabled: false
+  host: ""
+  port: 8080
+
+extraArgs: []
+# --key1=val1
+# --key2
+
+image:
+  repository: ghcr.io/eminaktas/oom-tracer
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: container-registry-secret
+
+labels: {}
+
+annotations: {}
+
+priorityClassName:
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+podSecurityContext: {}
+
+containerSecurityContext:
+  capabilities:
+    add:
+    - SYS_ADMIN
+    - SYS_PTRACE
+    drop:
+    - ALL
+
+serviceAccount:
+  name: ""
+  annotations: {}
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: node-role.kubernetes.io/control-plane
+          operator: DoesNotExist
+
+fullnameOverride:
+nameOverride:

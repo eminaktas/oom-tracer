@@ -1,0 +1,11 @@
+[Unit]
+Description=Memory Hog for OOM testing
+
+[Service]
+ExecStart=/usr/bin/stress-ng --vm 2 --vm-bytes 80% --vm-keep
+Restart=always
+OOMScoreAdjust=-1000
+# MemoryMax=10G
+
+[Install]
+WantedBy=multi-user.target
