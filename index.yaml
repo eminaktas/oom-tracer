@@ -2,6 +2,17 @@ apiVersion: v1
 entries:
   oom-tracer:
   - apiVersion: v2
+    appVersion: v0.1.0
+    created: "2025-09-22T05:19:39.810905587Z"
+    description: A BPF service that captures OOM kills and marks pods to be evicted
+      for Descheduler's custom evictor.
+    digest: 12e1014397fa58994ef79974e70b1e6cccd4d2cdcb821c72c01d8b3bf1afba60
+    name: oom-tracer
+    type: application
+    urls:
+    - https://eminaktas.github.io/oom-tracer/oom-tracer-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v2
     appVersion: v0.0.1
     created: "2025-09-21T20:08:00.436558721Z"
     description: A BPF service that captures OOM kills and marks pods to be evicted
@@ -12,4 +23,4 @@ entries:
     urls:
     - https://eminaktas.github.io/oom-tracer/oom-tracer-0.0.1.tgz
     version: 0.0.1
-generated: "2025-09-21T20:08:00.436066758Z"
+generated: "2025-09-22T05:19:39.810255942Z"
