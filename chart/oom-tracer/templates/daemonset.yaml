@@ -63,9 +63,11 @@ spec:
         imagePullPolicy: {{ .Values.pullPolicy }}
         resources: {{- toYaml .Values.resources | nindent 10 }}
         securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
-        port:
+        {{- if not .Values.metric.disabled }}
+        ports:
         - containerPort: {{ .Values.metric.port }}
           protocol: TCP
+        {{- end }}
         env:
         - name: GOMEMLIMIT
           valueFrom:

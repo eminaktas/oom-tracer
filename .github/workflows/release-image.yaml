@@ -1,4 +1,4 @@
-name: release
+name: release-image
 
 on:
   push:
@@ -48,19 +48,3 @@ jobs:
           tags: |
             ghcr.io/eminaktas/oom-tracer:${{ github.ref_name }}
             ghcr.io/eminaktas/oom-tracer:latest
-
-  chart:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    needs: image
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Publish Helm charts
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          charts_dir: chart
-          token: ${{ secrets.GITHUB_TOKEN }}
