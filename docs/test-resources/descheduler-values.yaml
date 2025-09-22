@@ -1,0 +1,26 @@
+# Example values for the descheduler build that bundles the RemoveAnnotated plugin.
+# See: https://github.com/eminaktas/descheduler/tree/plugin/removeannotated
+kind: Deployment
+
+image:
+  repository: ghcr.io/eminaktas/descheduler
+  tag: v20250922-v0.34.0-removeannotated
+
+cmdOptions:
+  v: 3
+
+deschedulerPolicy:
+  profiles:
+  - name: Default
+    pluginConfig:
+    - name: "DefaultEvictor"
+      args:
+        ignorePvcPods: true
+        evictLocalStoragePods: true
+    - name: "RemoveAnnotated"
+      args:
+        annotationKey: oom-tracer.alpha.kubernetes.io/evict-me
+    plugins:
+      deschedule:
+        enabled:
+          - "RemoveAnnotated"

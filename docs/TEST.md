@@ -2,6 +2,21 @@
 
 Use these recipes to create realistic memory pressure and validate that OOM Tracer captures events end-to-end before allowing automated evictions.
 
+## Descheduler With `RemoveAnnotated`
+
+Pair the tracer with the descheduler build published at `ghcr.io/eminaktas/descheduler:v20250922-v0.34.0-removeannotated`. It includes the custom [`RemoveAnnotated` plugin](https://github.com/eminaktas/descheduler/tree/plugin/removeannotated), which evicts pods as soon as they receive the `oom-tracer.alpha.kubernetes.io/evict-me` annotation written by the tracer.
+
+An example Helm values file lives at `docs/test-resources/descheduler-values.yaml`. Apply it with your preferred Helm workflow to run the descheduler alongside the tracer while rehearsing the flows below.
+
+```bash
+helm repo add descheduler https://kubernetes-sigs.github.io/descheduler/
+helm upgrade --install descheduler \
+  --namespace kube-system \
+  descheduler/descheduler \
+  -f docs/test-resources/descheduler-values.yaml \
+  --version 0.33.0
+```
+
 ## Kubernetes Workloads
 
 The manifests under `docs/test-resources/k8s/` generate controlled memory pressure inside the cluster.

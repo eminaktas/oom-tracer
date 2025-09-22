@@ -23,6 +23,24 @@ When annotations are disabled (empty flag) the tracer runs in an observation-onl
 
 OOM Tracer is designed as a signal producer. Pair it with the [Kubernetes descheduler](https://github.com/kubernetes-sigs/descheduler) configured to run the out-of-tree `AnnotationEvictor`. That evictor interprets the pod annotation written by the tracer and performs the eviction on your behalf, allowing you to tune eviction policies separately from detection.
 
+For clusters that need a turnkey path to automated evictions, we maintain a descheduler build that ships the `RemoveAnnotated` plugin. The plugin lives in the [eminaktas/descheduler `plugin/removeannotated` branch](https://github.com/eminaktas/descheduler/tree/plugin/removeannotated) and extends the upstream project with logic to evict pods carrying the annotation emitted by OOM Tracer (`oom-tracer.alpha.kubernetes.io/evict-me` by default).
+
+- Container image: `ghcr.io/eminaktas/descheduler:v20250922-v0.34.0-removeannotated`
+- Helm values example: [`docs/test-resources/descheduler-values.yaml`](docs/test-resources/descheduler-values.yaml)
+
+The sample values configure the descheduler to enable the `RemoveAnnotated` plugin alongside the default evictor. Deploying the tracer with the matching `--victim-annotation` flag and running this descheduler build completes the feedback loop: annotated pods are recognized by the plugin and removed from the cluster automatically.
+
+```bash
+helm repo add descheduler https://kubernetes-sigs.github.io/descheduler/
+helm upgrade --install descheduler \
+  --namespace kube-system \
+  descheduler/descheduler \
+  -f docs/test-resources/descheduler-values.yaml \
+  --version 0.33.0
+```
+
+The command above installs the upstream chart while overriding the container image so the `RemoveAnnotated` plugin is available to consume annotations emitted by OOM Tracer.
+
 ## Building the Agent
 
 ```bash
